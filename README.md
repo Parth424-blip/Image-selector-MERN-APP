@@ -1,70 +1,96 @@
-# Getting Started with Create React App
+# MERN + OAuth: Image Search & Multi-Select
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Full-stack project using MongoDB, Express, React, Node, Passport OAuth, and Unsplash API.
 
-## Available Scripts
+## Features
+- OAuth login with Google, Facebook, GitHub (Passport.js)
+- Only authenticated users can search
+- Unsplash image search with 4-column grid and multi-select overlay
+- Top 5 searches across all users (banner)
+- Per-user search history with timestamps
 
-In the project directory, you can run:
+## Folder Structure
+- `src/` React frontend (port 3000)
+- `server/` Express backend (port 5000)
 
-### `npm start`
+## Setup
+1) Install deps
+```bash
+npm install
+cd server && npm install
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+2) Create `server/.env`
+```bash
+MONGODB_URI=mongodb://localhost:27017/mern-oauth-search
+SESSION_SECRET=replace-with-strong-secret
+CLIENT_ORIGIN=http://localhost:3000
+SERVER_BASE_URL=http://localhost:5000
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+UNSPLASH_ACCESS_KEY=your_unsplash_access_key
 
-### `npm test`
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+FACEBOOK_CLIENT_ID=your_facebook_app_id
+FACEBOOK_CLIENT_SECRET=your_facebook_app_secret
 
-### `npm run build`
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+3) Configure OAuth app callback URLs
+- Google: `http://localhost:5000/auth/google/callback`
+- Facebook: `http://localhost:5000/auth/facebook/callback`
+- GitHub: `http://localhost:5000/auth/github/callback`
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+4) Run
+```bash
+# Terminal 1
+cd server
+npm start
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+# Terminal 2 (project root)
+npm start
+```
 
-### `npm run eject`
+Open `http://localhost:3000`. Click a provider to sign in.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## API Endpoints
+- GET `/api/current_user` → returns the authenticated user or `null`
+- GET `/api/top-searches` → `{ topSearches: string[] }`
+- POST `/api/search` `{ term }` → `{ images: {id,url}[] }`
+- GET `/api/history` → `{ history: {term,timestamp}[] }`
+- POST `/api/logout` → `{ success: true }`
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+All endpoints require authentication except `/api/current_user`.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### cURL examples
+```bash
+# Get current user
+curl -i -c cookies.txt -b cookies.txt http://localhost:5000/api/current_user
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+# After login via browser, reuse cookies to call APIs:
+curl -i -c cookies.txt -b cookies.txt http://localhost:5000/api/top-searches
 
-## Learn More
+curl -i -c cookies.txt -b cookies.txt \
+  -H "Content-Type: application/json" \
+  -d '{"term":"mountains"}' \
+  http://localhost:5000/api/search
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+curl -i -c cookies.txt -b cookies.txt http://localhost:5000/api/history
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Visual Proof
+- OAuth login screen (`src/pages/LoginPage.js`)
+- Top Searches banner + Search results + multi-select overlay (`src/pages/SearchPage.js`)
+- Search history sidebar (`src/pages/SearchPage.js`)
 
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Notes
+- CORS is restricted to `CLIENT_ORIGIN` and cookies are enabled for session.
+- Ensure Unsplash app is approved and usage complies with their terms.
+ - Set your OAuth app callback URLs to exactly match:
+   - Google: `http://localhost:5000/auth/google/callback`
+   - Facebook: `http://localhost:5000/auth/facebook/callback`
+   - GitHub: `http://localhost:5000/auth/github/callback`
+ - If login redirects to `/auth/failure`, re-check `SERVER_BASE_URL`, provider callback URLs, and client IDs/secrets.

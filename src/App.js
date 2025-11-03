@@ -1,25 +1,32 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from "react";
+import { fetchCurrentUser } from "./api";
+import LoginPage from "./pages/LoginPage";
+import SearchPage from "./pages/SearchPage";
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+  const [user, setUser] = useState(undefined); // undefined while loading
+
+  useEffect(() => {
+    async function init() {
+      try {
+        const u = await fetchCurrentUser();
+        setUser(u);
+      } catch {
+        setUser(null);
+      }
+    }
+    init();
+  }, []);
+
+  if (user === undefined) {
+    return <div style={{ padding: 20 }}>Loading...</div>;
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
+
+  return <SearchPage />;
 }
 
 export default App;
